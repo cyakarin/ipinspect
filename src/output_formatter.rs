@@ -29,7 +29,7 @@ impl OutputFormatter {
         println!("---");
         println!("YOUR INPUT         {}", self.input);
         println!("NETWORK ADDRESS    {}", self.network_address);
-        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})", self.first_host(), self.last_host(), self.hosts.count());
+        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})", self.first_host(), self.last_host(), self.hosts_count());
         println!("BROADCAST ADDRESS  {}", self.broadcast_address);
         println!("NETMASK            {} (/{})", self.netmask, self.netmask_prefix);
     }
@@ -46,6 +46,15 @@ impl OutputFormatter {
             Some(x) => return x.to_string(),
             None => return String::from("")
         };
+    }
+
+    fn hosts_count(&self) -> String {
+        let max_mask_bits = if self.network_address.is_ipv4() { 32 } else { 128 };
+        if usize::BITS > (max_mask_bits - self.netmask_prefix).into() {
+            return self.hosts.count().to_string()
+        } else {
+            return String::from("TOO MANY")
+        }
     }
 }
 
