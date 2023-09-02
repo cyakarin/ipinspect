@@ -1,8 +1,8 @@
 mod output_formatter;
+mod network_parser;
 
 use clap::Parser;
-use std::str::FromStr;
-use ipnet::IpNet;
+use network_parser::NetworkParser;
 
 #[derive(Parser)]
 struct Cli {
@@ -12,7 +12,8 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
     let input_network = String::from(args.ipnetwork);
-    match IpNet::from_str(&input_network) {
+    let net = NetworkParser::new(String::from(&input_network));
+    match net.parse() {
         Ok(parsed_network) => {
             output_formatter::format(input_network, parsed_network);
         }
