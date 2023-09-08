@@ -12,8 +12,8 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
     let input_network = String::from(args.ipnetwork);
-    let net = NetworkParser::new(String::from(&input_network));
-    match net.parse() {
+    let parser = NetworkParser::new(String::from(&input_network));
+    match parser.parse() {
         Ok(parsed_network) => {
             output_formatter::format(input_network, parsed_network);
         }
