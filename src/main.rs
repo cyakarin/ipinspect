@@ -1,8 +1,7 @@
-mod output_formatter;
-mod network_parser;
+mod ipinspector;
 
 use clap::Parser;
-use network_parser::NetworkParser;
+use ipinspector::IpInspector;
 
 #[derive(Parser)]
 struct Cli {
@@ -11,11 +10,9 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    let input_network = String::from(args.ipnetwork);
-    let parser = NetworkParser::new(String::from(&input_network));
-    match parser.parse() {
-        Ok(parsed_network) => {
-            output_formatter::format(input_network, parsed_network);
+    match IpInspector::build(String::from(args.ipnetwork)) {
+        Ok(inspector) => {
+            inspector.print_for_human();
         }
         Err(e) => {
             println!("{}", e);
