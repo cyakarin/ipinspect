@@ -141,3 +141,50 @@ impl MyAddrParseError {
 }
 
 impl Error for MyAddrParseError {}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_test_for_ok() {
+        assert!(IpInspector::build(String::from("192.0.2.0/24")).is_ok());
+        assert!(IpInspector::build(String::from("192.0.2.0/32")).is_ok());
+        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.0")).is_ok());
+        assert!(IpInspector::build(String::from("2001:db8::/32")).is_ok());
+    }
+
+    #[test]
+    fn build_test_for_error() {
+        assert!(IpInspector::build(String::from("192.0.2.0")).is_err());
+        assert!(IpInspector::build(String::from("192.0.2.0/33")).is_err());
+        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.1")).is_err());
+        assert!(IpInspector::build(String::from("192.0.2.0/255.255.256.0")).is_err());
+        assert!(IpInspector::build(String::from("hoge")).is_err());
+    }
+
+    #[test]
+    fn netmask_bit_for_ok() {
+        assert_eq!(IpInspector::netmask_bit("192.0.2.0/24").unwrap(), 24);
+        assert_eq!(IpInspector::netmask_bit("192.0.2.0/255.255.255.0").unwrap(), 24);
+        assert_eq!(IpInspector::netmask_bit("2001:db8::/32").unwrap(), 32);
+    }
+
+    #[test]
+    fn netmask_bit_for_err() {
+        assert!(IpInspector::netmask_bit("192.0.2.0/hoge").is_err());
+        assert!(IpInspector::netmask_bit("192.0.2.0//24").is_err());
+        assert!(IpInspector::netmask_bit("192.0.2.0/255.255.256.0").is_err());
+        assert!(IpInspector::netmask_bit("192.0.2.0/255.255.255.1").is_err());
+    }
+
+    #[test]
+    fn host_counts() {
+        let inspector = IpInspector::build(String::from("192.0.2.0/24")).unwrap();
+        assert_eq!(inspector.hosts_count(), "254");
+
+        let inspector = IpInspector::build(String::from("2001:DB8::/32")).unwrap();
+        assert_eq!(inspector.hosts_count(), "TOO MANY");
+    }
+}
