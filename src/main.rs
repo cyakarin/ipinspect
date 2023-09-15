@@ -10,7 +10,7 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    match IpInspector::build(String::from(args.ipnetwork)) {
+    match IpInspector::build(args.ipnetwork) {
         Ok(inspector) => {
             inspector.print_for_human();
         }
