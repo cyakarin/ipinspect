@@ -10,12 +10,12 @@ pub struct IpInspector {
 }
 
 impl IpInspector {
-    pub fn build(network: String) -> Result<Self, MyAddrParseError> {
-        let parsed_network: IpNet = match IpInspector::parse(&network) {
+    pub fn build(network: &str) -> Result<Self, MyAddrParseError> {
+        let parsed_network: IpNet = match IpInspector::parse(network) {
             Ok(ipnet) => { ipnet }
             Err(e) => { return Err(e); }
         };
-        Ok(Self { input_network: network, network: parsed_network })
+        Ok(Self { input_network: String::from(network), network: parsed_network })
     }
 
     pub fn print_for_human(&self) {
@@ -149,19 +149,19 @@ mod tests {
 
     #[test]
     fn build_test_for_ok() {
-        assert!(IpInspector::build(String::from("192.0.2.0/24")).is_ok());
-        assert!(IpInspector::build(String::from("192.0.2.0/32")).is_ok());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.0")).is_ok());
-        assert!(IpInspector::build(String::from("2001:db8::/32")).is_ok());
+        assert!(IpInspector::build("192.0.2.0/24").is_ok());
+        assert!(IpInspector::build("192.0.2.0/32").is_ok());
+        assert!(IpInspector::build("192.0.2.0/255.255.255.0").is_ok());
+        assert!(IpInspector::build("2001:db8::/32").is_ok());
     }
 
     #[test]
     fn build_test_for_error() {
-        assert!(IpInspector::build(String::from("192.0.2.0")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/33")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.1")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.256.0")).is_err());
-        assert!(IpInspector::build(String::from("hoge")).is_err());
+        assert!(IpInspector::build("192.0.2.0").is_err());
+        assert!(IpInspector::build("192.0.2.0/33").is_err());
+        assert!(IpInspector::build("192.0.2.0/255.255.255.1").is_err());
+        assert!(IpInspector::build("192.0.2.0/255.255.256.0").is_err());
+        assert!(IpInspector::build("hoge").is_err());
     }
 
     #[test]
@@ -181,10 +181,10 @@ mod tests {
 
     #[test]
     fn host_counts() {
-        let inspector = IpInspector::build(String::from("192.0.2.0/24")).unwrap();
+        let inspector = IpInspector::build("192.0.2.0/24").unwrap();
         assert_eq!(inspector.hosts_count(), "254");
 
-        let inspector = IpInspector::build(String::from("2001:DB8::/32")).unwrap();
+        let inspector = IpInspector::build("2001:DB8::/32").unwrap();
         assert_eq!(inspector.hosts_count(), "TOO MANY");
     }
 }
