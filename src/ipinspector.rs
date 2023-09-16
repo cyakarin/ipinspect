@@ -22,7 +22,11 @@ impl IpInspector {
         println!("---");
         println!("YOUR INPUT         {}", self.input_network);
         println!("NETWORK ADDRESS    {}", self.network_address());
-        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})", self.first_host_address(), self.last_host_address(), self.hosts_count());
+        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})",
+                    self.first_host_address_string(),
+                    self.last_host_address_string(),
+                    self.hosts_count_string()
+                 );
         if self.network_address().is_ipv4() {
             println!("BROADCAST ADDRESS  {}", self.broadcast_address());
         } else {
@@ -97,21 +101,21 @@ impl IpInspector {
         self.network.prefix_len()
     }
 
-    fn first_host_address(&self) -> String {
+    fn first_host_address_string(&self) -> String {
         match self.network.hosts().next() {
             Some(x) => return x.to_string(),
             None => return String::from("")
         };
     }
 
-    fn last_host_address(&self) -> String {
+    fn last_host_address_string(&self) -> String {
         match self.network.hosts().last() {
             Some(x) => return x.to_string(),
             None => return String::from("")
         };
     }
 
-    fn hosts_count(&self) -> String {
+    fn hosts_count_string(&self) -> String {
         let max_mask_bits = if self.network_address().is_ipv4() { 32 } else { 128 };
         if usize::BITS > (max_mask_bits - self.netmask_prefix()).into() {
             return self.network.hosts().count().to_string()
@@ -180,11 +184,11 @@ mod tests {
     }
 
     #[test]
-    fn host_counts() {
+    fn hosts_count_string() {
         let inspector = IpInspector::build("192.0.2.0/24").unwrap();
-        assert_eq!(inspector.hosts_count(), "254");
+        assert_eq!(inspector.hosts_count_string(), "254");
 
         let inspector = IpInspector::build("2001:DB8::/32").unwrap();
-        assert_eq!(inspector.hosts_count(), "TOO MANY");
+        assert_eq!(inspector.hosts_count_string(), "TOO MANY");
     }
 }
