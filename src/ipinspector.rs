@@ -10,19 +10,23 @@ pub struct IpInspector {
 }
 
 impl IpInspector {
-    pub fn build(network: String) -> Result<Self, MyAddrParseError> {
-        let parsed_network: IpNet = match IpInspector::parse(&network) {
+    pub fn build(network: &str) -> Result<Self, IpNetworkParseError> {
+        let parsed_network: IpNet = match IpInspector::parse(network) {
             Ok(ipnet) => { ipnet }
             Err(e) => { return Err(e); }
         };
-        Ok(Self { input_network: network, network: parsed_network })
+        Ok(Self { input_network: String::from(network), network: parsed_network })
     }
 
     pub fn print_for_human(&self) {
         println!("---");
         println!("YOUR INPUT         {}", self.input_network);
         println!("NETWORK ADDRESS    {}", self.network_address());
-        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})", self.first_host_address(), self.last_host_address(), self.hosts_count());
+        println!("HOST ADDRESS RANGE {} ... {} (COUNT: {})",
+                    self.first_host_address_string(),
+                    self.last_host_address_string(),
+                    self.hosts_count_string()
+                 );
         if self.network_address().is_ipv4() {
             println!("BROADCAST ADDRESS  {}", self.broadcast_address());
         } else {
@@ -31,7 +35,7 @@ impl IpInspector {
         println!("NETMASK            {} (/{})", self.netmask(), self.netmask_prefix());
     }
 
-    fn parse(network: &str) -> Result<IpNet, MyAddrParseError> {
+    fn parse(network: &str) -> Result<IpNet, IpNetworkParseError> {
         match IpInspector::netmask_bit(network) {
             Ok(bit) => {
                 let v: Vec<&str> = network.split('/').collect();
@@ -41,7 +45,7 @@ impl IpInspector {
                         return Ok(parsed_network);
                     }
                     Err(_) => {
-                        return Err(MyAddrParseError::new(String::from("Invalid IP network")));
+                        return Err(IpNetworkParseError::new(String::from("Invalid IP network")));
                     }
                 }
             }
@@ -52,10 +56,10 @@ impl IpInspector {
         }
     }
 
-    fn netmask_bit(network: &str) -> Result<u8, MyAddrParseError> {
+    fn netmask_bit(network: &str) -> Result<u8, IpNetworkParseError> {
         let v: Vec<&str> = network.split('/').collect();
         if v.len() != 2 {
-            return Err(MyAddrParseError::new(String::from("Invalid IP network")));
+            return Err(IpNetworkParseError::new(String::from("Invalid IP network")));
         }
         if v[1].contains('.') || v[1].contains(':') {
             match IpAddr::from_str(v[1]) {
@@ -65,18 +69,18 @@ impl IpInspector {
                             return Ok(bit);
                         }
                         Err(_) => {
-                            return Err(MyAddrParseError::new(String::from("invalid netmask")));
+                            return Err(IpNetworkParseError::new(String::from("invalid netmask")));
                         }
                     }
                 }
                 Err(_) => {
-                    return Err(MyAddrParseError::new(String::from("invalid netmask")));
+                    return Err(IpNetworkParseError::new(String::from("invalid netmask")));
                 }
             }
         } else {
             match v[1].parse::<u8>() {
                 Ok(bit) => { return Ok(bit); }
-                Err(_e) => { return Err(MyAddrParseError::new(String::from("invalid netmask"))); }
+                Err(_e) => { return Err(IpNetworkParseError::new(String::from("invalid netmask"))); }
             }
         }
     }
@@ -97,21 +101,21 @@ impl IpInspector {
         self.network.prefix_len()
     }
 
-    fn first_host_address(&self) -> String {
+    fn first_host_address_string(&self) -> String {
         match self.network.hosts().next() {
             Some(x) => return x.to_string(),
             None => return String::from("")
         };
     }
 
-    fn last_host_address(&self) -> String {
+    fn last_host_address_string(&self) -> String {
         match self.network.hosts().last() {
             Some(x) => return x.to_string(),
             None => return String::from("")
         };
     }
 
-    fn hosts_count(&self) -> String {
+    fn hosts_count_string(&self) -> String {
         let max_mask_bits = if self.network_address().is_ipv4() { 32 } else { 128 };
         if usize::BITS > (max_mask_bits - self.netmask_prefix()).into() {
             return self.network.hosts().count().to_string()
@@ -122,25 +126,25 @@ impl IpInspector {
 }
 
 #[derive(Debug, Clone)]
-pub struct MyAddrParseError {
+pub struct IpNetworkParseError {
     message: String
 }
 
-impl fmt::Display for MyAddrParseError {
+impl fmt::Display for IpNetworkParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.message)
     }
 }
 
-impl MyAddrParseError {
+impl IpNetworkParseError {
     fn new(error: String) -> Self {
-        MyAddrParseError {
+        IpNetworkParseError {
             message: error
         }
     }
 }
 
-impl Error for MyAddrParseError {}
+impl Error for IpNetworkParseError {}
 
 
 #[cfg(test)]
@@ -149,19 +153,19 @@ mod tests {
 
     #[test]
     fn build_test_for_ok() {
-        assert!(IpInspector::build(String::from("192.0.2.0/24")).is_ok());
-        assert!(IpInspector::build(String::from("192.0.2.0/32")).is_ok());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.0")).is_ok());
-        assert!(IpInspector::build(String::from("2001:db8::/32")).is_ok());
+        assert!(IpInspector::build("192.0.2.0/24").is_ok());
+        assert!(IpInspector::build("192.0.2.0/32").is_ok());
+        assert!(IpInspector::build("192.0.2.0/255.255.255.0").is_ok());
+        assert!(IpInspector::build("2001:db8::/32").is_ok());
     }
 
     #[test]
     fn build_test_for_error() {
-        assert!(IpInspector::build(String::from("192.0.2.0")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/33")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.255.1")).is_err());
-        assert!(IpInspector::build(String::from("192.0.2.0/255.255.256.0")).is_err());
-        assert!(IpInspector::build(String::from("hoge")).is_err());
+        assert!(IpInspector::build("192.0.2.0").is_err());
+        assert!(IpInspector::build("192.0.2.0/33").is_err());
+        assert!(IpInspector::build("192.0.2.0/255.255.255.1").is_err());
+        assert!(IpInspector::build("192.0.2.0/255.255.256.0").is_err());
+        assert!(IpInspector::build("hoge").is_err());
     }
 
     #[test]
@@ -180,11 +184,11 @@ mod tests {
     }
 
     #[test]
-    fn host_counts() {
-        let inspector = IpInspector::build(String::from("192.0.2.0/24")).unwrap();
-        assert_eq!(inspector.hosts_count(), "254");
+    fn hosts_count_string() {
+        let inspector = IpInspector::build("192.0.2.0/24").unwrap();
+        assert_eq!(inspector.hosts_count_string(), "254");
 
-        let inspector = IpInspector::build(String::from("2001:DB8::/32")).unwrap();
-        assert_eq!(inspector.hosts_count(), "TOO MANY");
+        let inspector = IpInspector::build("2001:DB8::/32").unwrap();
+        assert_eq!(inspector.hosts_count_string(), "TOO MANY");
     }
 }
