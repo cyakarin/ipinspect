@@ -10,7 +10,7 @@ pub struct IpInspector {
 }
 
 impl IpInspector {
-    pub fn build(network: &str) -> Result<Self, MyAddrParseError> {
+    pub fn build(network: &str) -> Result<Self, IpNetworkParseError> {
         let parsed_network: IpNet = match IpInspector::parse(network) {
             Ok(ipnet) => { ipnet }
             Err(e) => { return Err(e); }
@@ -31,7 +31,7 @@ impl IpInspector {
         println!("NETMASK            {} (/{})", self.netmask(), self.netmask_prefix());
     }
 
-    fn parse(network: &str) -> Result<IpNet, MyAddrParseError> {
+    fn parse(network: &str) -> Result<IpNet, IpNetworkParseError> {
         match IpInspector::netmask_bit(network) {
             Ok(bit) => {
                 let v: Vec<&str> = network.split('/').collect();
@@ -41,7 +41,7 @@ impl IpInspector {
                         return Ok(parsed_network);
                     }
                     Err(_) => {
-                        return Err(MyAddrParseError::new(String::from("Invalid IP network")));
+                        return Err(IpNetworkParseError::new(String::from("Invalid IP network")));
                     }
                 }
             }
@@ -52,10 +52,10 @@ impl IpInspector {
         }
     }
 
-    fn netmask_bit(network: &str) -> Result<u8, MyAddrParseError> {
+    fn netmask_bit(network: &str) -> Result<u8, IpNetworkParseError> {
         let v: Vec<&str> = network.split('/').collect();
         if v.len() != 2 {
-            return Err(MyAddrParseError::new(String::from("Invalid IP network")));
+            return Err(IpNetworkParseError::new(String::from("Invalid IP network")));
         }
         if v[1].contains('.') || v[1].contains(':') {
             match IpAddr::from_str(v[1]) {
@@ -65,18 +65,18 @@ impl IpInspector {
                             return Ok(bit);
                         }
                         Err(_) => {
-                            return Err(MyAddrParseError::new(String::from("invalid netmask")));
+                            return Err(IpNetworkParseError::new(String::from("invalid netmask")));
                         }
                     }
                 }
                 Err(_) => {
-                    return Err(MyAddrParseError::new(String::from("invalid netmask")));
+                    return Err(IpNetworkParseError::new(String::from("invalid netmask")));
                 }
             }
         } else {
             match v[1].parse::<u8>() {
                 Ok(bit) => { return Ok(bit); }
-                Err(_e) => { return Err(MyAddrParseError::new(String::from("invalid netmask"))); }
+                Err(_e) => { return Err(IpNetworkParseError::new(String::from("invalid netmask"))); }
             }
         }
     }
@@ -122,25 +122,25 @@ impl IpInspector {
 }
 
 #[derive(Debug, Clone)]
-pub struct MyAddrParseError {
+pub struct IpNetworkParseError {
     message: String
 }
 
-impl fmt::Display for MyAddrParseError {
+impl fmt::Display for IpNetworkParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.message)
     }
 }
 
-impl MyAddrParseError {
+impl IpNetworkParseError {
     fn new(error: String) -> Self {
-        MyAddrParseError {
+        IpNetworkParseError {
             message: error
         }
     }
 }
 
-impl Error for MyAddrParseError {}
+impl Error for IpNetworkParseError {}
 
 
 #[cfg(test)]
